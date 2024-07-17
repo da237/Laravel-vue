@@ -21,7 +21,7 @@ class ContactController extends Controller
      */
     public function create()
     {
-        //
+        return Inertia::render('Contact/Create');
     }
 
     /**
@@ -29,7 +29,8 @@ class ContactController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        // return Inertia::render('Contact/Store');
+        dd($request->all());
     }
 
     /**

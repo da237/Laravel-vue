@@ -37,7 +37,9 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::prefix('dashboard')->group(function(){
-    Route::get('contacs',[ContactController::class,'index'])->name('contact.index');
+    Route::get('contact',[ContactController::class,'index'])->name('contact.index');
+    Route::get('contact/create',[ContactController::class, 'create'])->name('contact.create');
+    Route::post('contact',[ContactController::class,'store'])->name('contact.store');
 });
 
 require __DIR__.'/auth.php';

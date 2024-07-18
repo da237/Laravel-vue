@@ -2,8 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Contact\StoreRequest;
+use App\Http\Requests\Contact\UpdateRequest;
 use App\Models\Contact;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 class ContactController extends Controller
@@ -13,7 +17,8 @@ class ContactController extends Controller
      */
     public function index()
     {
-        return Inertia::render('Contact/Index');
+        $contacts = Contact::all();
+        return Inertia::render('Contact/Index',compact('contacts'));
     }
 
     /**
@@ -27,11 +32,34 @@ class ContactController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(StoreRequest $request)
     {
-        // return Inertia::render('Contact/Store');
-        dd($request->all());
+        // Mostrar todo el contenido del request
+        // dd($request->all());
+
+        // La función except nos sirve para decirle que no tenga en cuenta cierto dato, en este caso la imagen
+        $data = $request->except('avatar');
+
+        if ($request->hasFile('avatar')) {
+            try {
+                $file = $request->file('avatar');
+                $routeName = $file->store('avatars', ['disk' => 'public']);
+                $data['avatar'] = $routeName;
+            } catch (\Exception $e) {
+                return response()->json(['error' => 'Error al subir la imagen: ' . $e->getMessage()], 500);
+            }
+        }
+
+        // Mostrar los datos después de almacenar la imagen
+        // dd($data);
+        $data['user_id'] = Auth::user()->id;
+        Contact::create($data); // Corregir el error tipográfico aquí
+
+        return to_route('contact.index');
     }
+
+
+
 
     /**
      * Display the specified resource.
@@ -46,15 +74,34 @@ class ContactController extends Controller
      */
     public function edit(Contact $contact)
     {
-        //
+        return Inertia::render('Contact/Edit',compact('contact'));
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Contact $contact)
+    public function update(UpdateRequest $request, Contact $contact)
     {
-        //
+
+        $data = $request->except('avatar');
+        if ($request->hasFile('avatar')) {
+            try {
+                $file = $request->file('avatar');
+                $routeName = $file->store('avatars', ['disk' => 'public']);
+                $data['avatar'] = $routeName;
+
+                if ($contact->avatar){
+                    Storage::disk('public')->delete($contact->avatar);
+                }
+            } catch (\Exception $e) {
+                return response()->json(['error' => 'Error al subir la imagen: ' . $e->getMessage()], 500);
+            }
+        }
+
+        $contact->update($data);
+        return to_route('contact.index');
+        // return to_route('contact.edit',$contact);
+        // return back();
     }
 
     /**
@@ -62,6 +109,11 @@ class ContactController extends Controller
      */
     public function destroy(Contact $contact)
     {
-        //
+        if ($contact->avatar){
+            Storage::disk('public')->delete($contact->avatar);
+        }
+
+        $contact->delete();
+        return to_route('contact.index');
     }
 }
